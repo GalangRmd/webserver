@@ -1,15 +1,51 @@
 const express = require('express')
 const app = express()
+var expressLayouts = require('express-ejs-layouts');
 const port = 3000
 
+//Gunakan ejs
+app.set('view engine', 'ejs');
+app.use(expressLayouts);
+
+
 app.get('/', (req, res) => {
-  res.sendFile('./index.html', {root:__dirname});
+  // res.sendFile('./index.html', {root:__dirname});
+  const siswa = [
+    {
+      nama : 'galang Ramadhan',
+      email : 'galangramad1113@gmail.com'
+    },
+    {
+      nama : 'galang Ramadh',
+      email : 'galangramad1115@gmail.com'
+    },
+    {
+      nama : 'galang sitampan',
+      email : 'galangramadhannn18@gmail.com'
+    }
+  ];
+  res.render('index',{
+  layout: 'layouts/main-layout',
+  nama: 'galang', 
+  title: 'halaman home',
+  siswa,
+});
 });
 app.get('/about', (req, res) => {
-  res.sendFile('./about.html', {root:__dirname});
-});
+  // res.sendFile('views/about', {root:__dirname});
+  res.render('about',{
+    layout: 'layouts/main-layout',
+    title: 'halaman about',
+  });
+})
+ 
+;
 app.get('/contact', (req, res) => {
-  res.sendFile('./contact.html', {root:__dirname});
+  // res.sendFile('./contact.html', {root:__dirname});
+  res.render('contact',{
+    layout: 'layouts/main-layout',
+    title: 'halaman contact',
+  })
 });
 app.get('/product/:id', (req, res) => {
   res.send(`Product ID :  ${req.params.id} <br>
