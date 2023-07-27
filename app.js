@@ -1,6 +1,6 @@
 const express = require('express');
 var expressLayouts = require('express-ejs-layouts');
-const morgan = require('morgan');
+const {loadContact, findContact} = require('./utils/contact');
 const app = express();
 const port = 3000;
 
@@ -9,7 +9,7 @@ app.set('view engine', 'ejs');
 
 //third party middleware
 app.use(expressLayouts);
-app.use(morgan('dev'));
+
 
 //built-in middleware
 app.use(express.static('public'));
@@ -55,15 +55,23 @@ app.get('/about', (req, res) => {
 ;
 app.get('/contact', (req, res) => {
   // res.sendFile('./contact.html', {root:__dirname});
+  const contacts = loadContact();
   res.render('contact',{
     layout: 'layouts/main-layout',
     title: 'halaman contact',
+    contacts,
   })
 });
-app.get('/product/:id', (req, res) => {
-  res.send(`Product ID :  ${req.params.id} <br>
-  Category : ${req.query.category}`);
+app.get('/contact/:nama', (req, res) => {
+  // res.sendFile('./contact.html', {root:__dirname});
+  const contact = findContact(req.params.nama);
+  res.render('detail',{
+    layout: 'layouts/main-layout',
+    title: 'Detail Contact',
+    contact,
+  })
 });
+
 app.use('/', (req, res) => {
   res.send('<h1>kamana bang</h1>');
 });
