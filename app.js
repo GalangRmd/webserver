@@ -1,6 +1,10 @@
 const express = require('express');
-var expressLayouts = require('express-ejs-layouts');
-const {loadContact, findContact} = require('./utils/contact');
+const expressLayouts = require('express-ejs-layouts');
+const {loadContact, findContact, addContact, cekDuplikat} = require('./utils/contact');
+const { body, validationResult, check } = require('express-validator');
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const flash = require('connect-flash');
 const app = express();
 const port = 3000;
 
@@ -13,13 +17,17 @@ app.use(expressLayouts);
 
 //built-in middleware
 app.use(express.static('public'));
+app.use( express.urlencoded({ extended: true }));
 
-
-//application level midleware
-app.use((req, res, next) => {
-  console.log('Time', Date.now());
-  next();
-})
+//konfigurasi flash
+app.use(cookieParser('secret'));
+app.use(session({
+  cookie:{ maxAge:6000},
+  secret: 'secret',
+  resave: true,
+  saveUninitialized: true,
+}));
+app.use(flash());
 
 app.get('/', (req, res) => {
   // res.sendFile('./index.html', {root:__dirname});
@@ -60,8 +68,47 @@ app.get('/contact', (req, res) => {
     layout: 'layouts/main-layout',
     title: 'halaman contact',
     contacts,
+    msg: req.flash('msg'),
   })
 });
+
+//halaman tambah contak
+app.get('/contact/add', (req, res) => {
+  res.render('add-contact', {
+    title : 'Tambah Data Contact',
+    layout : 'layouts/main-layout',
+  });
+});
+
+//proses data contact
+app.post('/contact', [ 
+  body('nama').custom((value) => { 
+    const duplikat = cekDuplikat(value); 
+    if(duplikat) { 
+      throw new Error('Nama contact sudah digunakan!'); 
+    } 
+    return true; 
+  }), 
+  check('email', 'Email tidak valid!').isEmail(), 
+  check('noHP', 'No HP tidak valid!!').isMobilePhone('id-ID'),
+  ], (req, res) => { 
+   const errors = validationResult(req); 
+   if(!errors.isEmpty()) { 
+    // return  res.status(404).json({ errors: errors.array() }); 
+   res.render('add-contact', { 
+    title: 'Form Tambah Data Contact', 
+    layout: 'layouts/main-layout', 
+    errors: errors.array(), 
+   }) 
+  }else{
+    addContact(req.body); 
+    //kirimkan flash masage
+    req.flash('msg', 'Data Contact Berhasil Ditambahkan!');
+    res.redirect('/contact') 
+  }
+});
+
+//halaman detail
 app.get('/contact/:nama', (req, res) => {
   // res.sendFile('./contact.html', {root:__dirname});
   const contact = findContact(req.params.nama);
@@ -77,51 +124,4 @@ app.use('/', (req, res) => {
 });
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
-})
-// const http = require('http');
-// const fs = require('fs');
-
-// const port = 3000;
-// const renderHtml = (path, res) => {
-//     fs.readFile(path, (err, data)=> {
-//         if (err){
-//             res.writeHead(404);
-//             res.write('Error : File Not Found');
-//         }else {
-//             res.write(data);
-//         }
-//         res.end();
-//     })
-// }
-
-// http
-// .createServer((req, res)=> {
-   
-//     res.writeHead(200, {
-//         'Content-Type' : 'text/html',
-//     });
-// const url = req.url;
-// switch(url){
-//     case '/about':
-//         renderHtml('./about.html', res);
-//         break;
-//     case '/contact':
-//         renderHtml('./contact.html', res);
-//          break;
-//     default:
-//         renderHtml('./index.html', res);
-//          break;
-// }
-
-// if (url === './about.html'){
-//     renderHtml('./about.html', res);
-// }else if (url === './contact.html'){
-//     renderHtml('./contact.html', res);
-// }
-// else if (url === './index.html'){
-//     renderHtml('./index.html', res);
-// };
-// })
-// .listen(port, () => {
-// console.log(`Server is listening on port ${port}..`);
-// })
+});
